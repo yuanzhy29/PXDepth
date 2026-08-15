@@ -3,19 +3,17 @@
 <h1>PXDepth: Pixel-Space Modeling for Structure Preserving<br>Monocular Depth Estimation</h1>
 
 <p>
-  <a href="https://github.com/yuanzhy29">Zhiyuan Yuan</a><sup>1</sup>&emsp;
-  <a href="https://guanyingc.github.io/">Guanying Chen</a><sup>1*</sup>&emsp;
-  <a href="https://lingtengqiu.github.io/">Lingteng Qiu</a><sup>3</sup>&emsp;
-  <a href="http://zhangruimao.site/">Ruimao Zhang</a><sup>1</sup>&emsp;
-  <a href="https://scholar.google.com.hk/citations?user=1o_qvR0AAAAJ&hl=en">Shuguang Cui</a><sup>3,2</sup>&emsp;
-  <a href="https://scholar.google.com/citations?user=PDgp6OkAAAAJ&hl=en">Xiaochun Cao</a><sup>1</sup>
+  <a href="https://github.com/yuanzhy29">Zhiyuan Yuan</a>&emsp;
+  <a href="https://guanyingc.github.io/">Guanying Chen</a><sup>*</sup>&emsp;
+  <a href="https://lingtengqiu.github.io/">Lingteng Qiu</a>&emsp;
+  <a href="http://zhangruimao.site/">Ruimao Zhang</a>&emsp;
+  <a href="https://scholar.google.com.hk/citations?user=1o_qvR0AAAAJ&hl=en">Shuguang Cui</a>&emsp;
+  <a href="https://scholar.google.com/citations?user=PDgp6OkAAAAJ&hl=en">Xiaochun Cao</a>
 </p>
 
-<img alt="Paper coming soon" src="https://img.shields.io/badge/Paper-coming%20soon-4C6FFF?style=flat-square">
 <img alt="arXiv coming soon" src="https://img.shields.io/badge/arXiv-coming%20soon-B31B1B?style=flat-square">
 <img alt="Project page coming soon" src="https://img.shields.io/badge/Project%20Page-coming%20soon-22A699?style=flat-square">
-<img alt="Checkpoints coming soon" src="https://img.shields.io/badge/Models-coming%20soon-7B61FF?style=flat-square">
-<a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache%202.0-5C6BC0?style=flat-square"></a>
+<a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face models coming soon" src="https://img.shields.io/badge/Models-Hugging%20Face-7B61FF?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
 
 </div>
 
