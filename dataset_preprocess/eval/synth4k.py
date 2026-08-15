@@ -1,27 +1,21 @@
 """Convert the five Synth4K subsets into PXDepth evaluation data.
 
-Expected input follows the official InfiniDepth download and metadata layout::
+Expected input directory::
 
     input_dir/
-      datasets/
-        cyberpunk/<files referenced by val.txt>
-        spiderman2/<files referenced by val.txt>
-        spidermanmm/<files referenced by val.txt>
-        deadisland/<files referenced by val.txt>
-        watchdoglegion/<files referenced by val.txt>
-      processed_datasets/
-        cyberpunk/val.txt
-        spiderman2/val.txt
-        spidermanmm/val.txt
-        deadisland/val.txt
-        watchdoglegion/val.txt
+      cyberpunk/<RGB and depth files>
+      spiderman2/<RGB and depth files>
+      spidermanmm/<RGB and depth files>
+      deadisland/<RGB and depth files>
+      watchdoglegion/<RGB and depth files>
 
-Each non-comment manifest line is ``rgb_rel_path depth_rel_path`` and paths are
-relative to that subset's directory under ``datasets``. ``--input_dir`` may
-instead point directly at ``datasets`` when ``--meta_dir`` points at
-``processed_datasets``. Depth supports NPY, NPZ, HDF5, EXR, TIFF, and PNG and is
-preserved as metric depth by default. Invalid or non-positive values become
-NaN. Evaluation-range filtering remains in ``all_benchmarks.json``.
+All discoverable RGB/depth pairs are converted by default, matching the
+original research preprocessor. An InfiniDepth ``processed_datasets`` root can
+optionally be supplied through ``--meta_dir`` to restrict conversion using
+``val_new.txt``, ``val.txt``, or ``test.txt``. Depth supports NPY, NPZ, HDF5,
+EXR, TIFF, and PNG and is preserved as metric depth by default. Invalid or
+non-positive values become NaN. Evaluation-range filtering remains in
+``all_benchmarks.json``.
 
 The output contains independent ``Synth4K-1`` through ``Synth4K-5`` roots,
 each with its own ``.index.txt`` as required by the released eval config.
@@ -32,6 +26,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 os.environ.setdefault("OPENCV_IO_ENABLE_OPENEXR", "1")
@@ -46,12 +41,124 @@ from runner import add_common_args, processor_kwargs
 
 
 SUBSETS = {
-    "Synth4K-1": "cyberpunk",
-    "Synth4K-2": "spiderman2",
-    "Synth4K-3": "spidermanmm",
-    "Synth4K-4": "deadisland",
-    "Synth4K-5": "watchdoglegion",
+    "Synth4K-1": ("cyberpunk", ("cyberpunk", "CyberPunk", "Synth4K-1", "synth4k-1")),
+    "Synth4K-2": ("spiderman2", ("spiderman2", "spider_man_2", "SpiderMan2", "Synth4K-2", "synth4k-2")),
+    "Synth4K-3": ("spidermanmm", ("spidermanmm", "spiderman_miles_morales", "SpiderManMM", "Synth4K-3", "synth4k-3")),
+    "Synth4K-4": ("deadisland", ("deadisland", "dead_island", "DeadIsland", "Synth4K-4", "synth4k-4")),
+    "Synth4K-5": ("watchdoglegion", ("watchdoglegion", "watch_dogs_legion", "WatchDogLegion", "Synth4K-5", "synth4k-5")),
 }
+
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+DEPTH_EXTS = {".png", ".exr", ".npy", ".npz", ".hdf5", ".h5"}
+IMAGE_DIRS = {"rgb", "image", "images", "color", "colors", "left", "frame", "frames"}
+DEPTH_DIRS = {"depth", "depths", "depth_map", "depth_maps", "dpt"}
+IGNORE_IMAGE_DIRS = DEPTH_DIRS | {"mask", "masks", "segmentation", "semantic", "normal", "normals"}
+
+
+def _subset_root(root: Path, aliases: tuple[str, ...]) -> Path | None:
+    """Resolve one game folder from its accepted raw names."""
+
+    aliases_lower = {name.lower() for name in aliases}
+    if root.name.lower() in aliases_lower:
+        return root
+    children = {path.name.lower(): path for path in root.iterdir() if path.is_dir()}
+    return next((children[name.lower()] for name in aliases if name.lower() in children), None)
+
+
+def _manifest(meta_dir: Path | None, subset: str, game: str, aliases: tuple[str, ...]) -> Path | None:
+    """Find an optional official split file without making it mandatory."""
+
+    if meta_dir is None:
+        return None
+    candidates = []
+    for name in (game, subset, *aliases):
+        candidates.extend(meta_dir / name / filename for filename in ("val_new.txt", "val.txt", "test.txt"))
+    candidates.extend(meta_dir / filename for filename in ("val_new.txt", "val.txt", "test.txt"))
+    return next((path for path in candidates if path.is_file()), None)
+
+
+def _resolve_path(root: Path, value: str) -> Path:
+    """Resolve a manifest path relative to the game folder or its parents."""
+
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    candidates = [root / path, *(parent / path for parent in root.parents)]
+    return next((candidate for candidate in candidates if candidate.exists()), candidates[0])
+
+
+def _image_candidates(depth: Path) -> Iterable[Path]:
+    """Generate structural RGB candidates for one depth file."""
+
+    depth_dir = next((parent for parent in (depth.parent, *depth.parents) if parent.name.lower() in DEPTH_DIRS), None)
+    if depth_dir is None:
+        return ()
+    relative = depth.relative_to(depth_dir)
+    stems = {
+        depth.stem,
+        depth.stem.replace("_depth", ""),
+        depth.stem.replace("-depth", ""),
+        depth.stem.replace(".depth", ""),
+    }
+    candidates = []
+    for directory in IMAGE_DIRS:
+        image_dir = depth_dir.parent / directory
+        candidates.extend((image_dir / relative).with_suffix(ext) for ext in IMAGE_EXTS)
+        candidates.extend(image_dir / relative.parent / f"{stem}{ext}" for stem in stems for ext in IMAGE_EXTS)
+    return candidates
+
+
+def _discover_pairs(root: Path) -> list[tuple[str, str, str]]:
+    """Discover every RGB/depth pair using the original converter rules."""
+
+    images: dict[str, list[Path]] = {}
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
+            continue
+        parts = {part.lower() for part in path.parts}
+        if parts & IGNORE_IMAGE_DIRS or any("mask" in part for part in parts):
+            continue
+        images.setdefault(path.stem, []).append(path)
+
+    depths = []
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in DEPTH_EXTS or "mask" in path.stem.lower():
+            continue
+        parts = {part.lower() for part in path.parts}
+        if parts & DEPTH_DIRS or "depth" in path.stem.lower():
+            depths.append(path)
+
+    pairs = []
+    for depth in sorted(depths):
+        image = next((candidate for candidate in _image_candidates(depth) if candidate.is_file()), None)
+        if image is None:
+            stems = (
+                depth.stem,
+                depth.stem.replace("_depth", ""),
+                depth.stem.replace("-depth", ""),
+                depth.stem.replace(".depth", ""),
+            )
+            image = next(
+                (sorted(images[stem], key=lambda path: len(path.parts))[0] for stem in stems if images.get(stem)),
+                None,
+            )
+        if image is not None:
+            pairs.append((str(image), str(depth), _key(root, depth)))
+    return pairs
+
+
+def _manifest_pairs(root: Path, manifest: Path) -> list[tuple[str, str, str]]:
+    """Read complete RGB/depth pairs from an optional split manifest."""
+
+    pairs = []
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        fields = line.strip().split()
+        if len(fields) < 2 or fields[0].startswith("#"):
+            continue
+        image, depth = _resolve_path(root, fields[0]), _resolve_path(root, fields[1])
+        if image.is_file() and depth.is_file():
+            pairs.append((str(image), str(depth), _key(root, depth)))
+    return pairs
 
 
 def _read_depth(path: Path, scale: float) -> np.ndarray:
@@ -115,14 +222,14 @@ def _key(root: Path, depth_path: Path) -> str:
 
 
 class Synth4K(BaseDataset[tuple[str, str, str]]):
-    """Convert one manifest-backed Synth4K game subset."""
+    """Convert one Synth4K game subset, optionally restricted by a manifest."""
 
-    def __init__(self, *args, subset: str, manifest: str | Path, depth_scale: float = 1.0, focal_px: float = 1440.0, **kwargs) -> None:
-        """Configure one subset and its official validation manifest.
+    def __init__(self, *args, subset: str, manifest: str | Path | None = None, depth_scale: float = 1.0, focal_px: float = 1440.0, **kwargs) -> None:
+        """Configure one subset and an optional validation manifest.
 
         Args:
             subset: Released output name, from ``Synth4K-1`` to ``Synth4K-5``.
-            manifest: Text file containing relative RGB/depth pairs.
+            manifest: Optional text file containing relative RGB/depth pairs.
             depth_scale: Multiplier converting source depth to meters.
             focal_px: Fallback focal length used by the released benchmark.
             *args: Common preprocessor positional arguments.
@@ -131,35 +238,21 @@ class Synth4K(BaseDataset[tuple[str, str, str]]):
 
         super().__init__(*args, **kwargs)
         self.subset = subset
-        self.manifest = Path(manifest).expanduser().resolve()
+        self.manifest = None if manifest is None else Path(manifest).expanduser().resolve()
         self.depth_scale = float(depth_scale)
         self.focal_px = float(focal_px)
         self.name = subset
 
     def discover(self) -> list[tuple[str, str, str]]:
-        """Read complete RGB/depth pairs from the official manifest.
+        """Read a supplied manifest or discover every complete pair.
 
         Returns:
             Tuples of relative RGB path, relative depth path, and output key.
         """
 
-        if not self.manifest.is_file():
-            raise FileNotFoundError(f"Synth4K manifest does not exist: {self.manifest}")
-        tasks = []
-        for line in self.manifest.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            fields = line.split()
-            if len(fields) < 2:
-                continue
-            image = Path(fields[0])
-            depth = Path(fields[1])
-            image_path = image if image.is_absolute() else self.input_dir / image
-            depth_path = depth if depth.is_absolute() else self.input_dir / depth
-            if image_path.is_file() and depth_path.is_file():
-                tasks.append((str(image_path), str(depth_path), _key(self.input_dir, depth_path)))
-        return tasks
+        if self.manifest is not None:
+            return _manifest_pairs(self.input_dir, self.manifest)
+        return _discover_pairs(self.input_dir)
 
     def key(self, frame: tuple[str, str, str]) -> str:
         """Return the manifest-derived stable sample key."""
@@ -188,44 +281,32 @@ class Synth4K(BaseDataset[tuple[str, str, str]]):
         return {"dataset": self.subset, "depth_unit": "meter"}
 
 
-def _roots(input_dir: Path, meta_dir: Path | None) -> tuple[Path, Path]:
-    """Resolve dataset and manifest roots from the two supported CLI forms.
-
-    Args:
-        input_dir: Commonspace root or its nested ``datasets`` directory.
-        meta_dir: Explicit processed-dataset metadata root, when provided.
-
-    Returns:
-        ``(datasets_root, manifests_root)`` absolute paths.
-    """
-
-    if (input_dir / "datasets").is_dir():
-        datasets = input_dir / "datasets"
-        manifests = meta_dir or input_dir / "processed_datasets"
-    else:
-        datasets = input_dir
-        manifests = meta_dir or input_dir.parent / "processed_datasets"
-    return datasets.resolve(), manifests.resolve()
-
-
 def main() -> None:
     """Parse options and preprocess selected Synth4K subsets."""
 
     parser = add_common_args(argparse.ArgumentParser(description=__doc__))
-    parser.add_argument("--meta_dir", type=Path, default=None, help="Root containing one <game>/val.txt per subset.")
+    parser.add_argument("--meta_dir", type=Path, default=None, help="Optional root containing split manifests.")
     parser.add_argument("--subsets", nargs="*", choices=tuple(SUBSETS), default=list(SUBSETS), help="Output subsets to process.")
     parser.add_argument("--depth_scale", type=float, default=1.0)
     parser.add_argument("--focal_px", type=float, default=1440.0)
     args = parser.parse_args()
-    datasets, manifests = _roots(Path(args.input_dir).expanduser().resolve(), args.meta_dir)
+    input_root = Path(args.input_dir).expanduser().resolve()
+    meta_dir = None if args.meta_dir is None else args.meta_dir.expanduser().resolve()
     common = processor_kwargs(args)
     for subset in args.subsets:
-        game = SUBSETS[subset]
+        game, aliases = SUBSETS[subset]
+        root = _subset_root(input_root, aliases)
+        if root is None:
+            print(f"[{subset}] subset folder not found under {input_root}; skipping")
+            continue
         common_subset = dict(common)
-        common_subset["input_dir"] = datasets / game
+        common_subset["input_dir"] = root
         common_subset["output_dir"] = Path(args.output_dir) / subset
-        manifest_candidates = (manifests / game / "val.txt", manifests / game / "val_new.txt")
-        manifest = next((path for path in manifest_candidates if path.is_file()), manifest_candidates[0])
+        manifest = _manifest(meta_dir, subset, game, aliases)
+        if manifest is None:
+            print(f"[{subset}] discovering all RGB/depth pairs under {root}")
+        else:
+            print(f"[{subset}] using split manifest {manifest}")
         Synth4K(
             **common_subset,
             subset=subset,
