@@ -34,6 +34,7 @@ git clone https://github.com/yuanzhy29/PXDepth.git
 cd PXDepth
 conda create -n pxdepth python=3.11 -y
 conda activate pxdepth
+pip install torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu128 # Use your preferred version if needed.
 pip install -r requirements.txt
 ```
 
