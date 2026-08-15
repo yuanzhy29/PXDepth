@@ -13,6 +13,6 @@ Copyright notices in vendored source files are retained.
 
 - `utils3d`: geometry utilities from EasternJournalist
 - `pipeline`: asynchronous data pipeline from EasternJournalist
-- PyTorch, TorchVision, NumPy, SciPy, OpenCV, Pillow, Matplotlib, Einops, Open3D, HDF5/h5py, and Hugging Face Hub
+- PyTorch, TorchVision, NumPy, SciPy, OpenCV, Pillow, Matplotlib, Einops, Open3D, OpenEXR, HDF5/h5py, and Hugging Face Hub
 
 Installations of these packages are governed by their own package licenses. This file is attribution information and is not a replacement for those licenses.

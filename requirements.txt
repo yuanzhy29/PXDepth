@@ -2,7 +2,7 @@
 torch<=2.11
 torchvision
 click
-opencv-python
+opencv-python==4.13.0.92
 scipy
 matplotlib
 pillow
@@ -14,6 +14,7 @@ einops
 tqdm
 h5py
 open3d
+OpenEXR==3.4.13
 
 # Geometry, data-pipeline, and metric-scale reference dependencies.
 git+https://github.com/EasternJournalist/utils3d.git@3fab839f0be9931dac7c8488eb0e1600c236e183
