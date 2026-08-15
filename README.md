@@ -27,7 +27,9 @@
 PXDepth separates global context encoding from pixel-space depth prediction, using a Global Context Encoder and a Pixel-Space Depth Predictor.
 </div>
 
-## Installation
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 git clone https://github.com/yuanzhy29/PXDepth.git
@@ -38,7 +40,7 @@ pip install torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 --index-url htt
 pip install -r requirements.txt
 ```
 
-## Checkpoints
+### Checkpoints
 
 Download our [pretrained model](https://huggingface.co/yuanzhy29/PXDepth/tree/main) under the `checkpoints/` directory. In addition, [MoGe-2](https://huggingface.co/Ruicheng/moge-2-vitl-normal) is required to recover metric scale for point cloud reconstruction. Your files should be organized as follows:
 
@@ -50,7 +52,7 @@ checkpoints/
     └── model.pt
 ```
 
-## Inference
+## 🔍 Inference
 
 Run inference on one image or all images under a directory:
 
@@ -61,10 +63,6 @@ python scripts/infer.py \
   --checkpoint checkpoints/pxdepth/model.pt \
   --fp16
 ```
-
-Inference and evaluation preserve the input aspect ratio at the default
-`1022x770` area. Use `--fixed-size` only when an exact stretched input
-size is required.
 
 Each image produces:
 
@@ -78,7 +76,7 @@ output/<image-name>/
 
 Use `--fp32` instead of `--fp16` for full-precision inference. Run `python scripts/infer.py --help` for all options.
 
-## Evaluation
+## 📊 Evaluation
 
 Download MoGe Benchmark from
 [Hugging Face](https://huggingface.co/datasets/Ruicheng/monocular-geometry-evaluation/tree/main),
@@ -104,27 +102,27 @@ python scripts/eval.py \
 
 See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags.
 
-## TODO
+## 🚧 TODO
 
 - [x] Release model, inference, and evaluation code
 - [x] Release preprocessing for evaluation datasets
 - [ ] Release training code and training configurations
 - [ ] Release training-dataset preprocessing code
 
-## Documentation
+## 📚 Documentation
 
 - [Evaluation](docs/EVALUATION.md)
 - [Evaluation dataset preprocessing](dataset_preprocess/README.md)
 
-## Citation
+## 📝 Citation
 
 ```bibtex
 ```
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 This repository builds on [MoGe](https://github.com/microsoft/moge), [DINOv2](https://github.com/facebookresearch/dinov2), [PixelDiT](https://github.com/NVlabs/PixelDiT), and [utils3d](https://github.com/EasternJournalist/utils3d). See [THIRD_PARTY.md](THIRD_PARTY.md) for attribution.
 
-## License
+## 📄 License
 
 PXDepth is released under the [Apache License 2.0](LICENSE).
