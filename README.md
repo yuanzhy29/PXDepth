@@ -12,7 +12,7 @@
 </p>
 
 <img alt="arXiv coming soon" src="https://img.shields.io/badge/arXiv-coming%20soon-B31B1B?style=flat-square">
-<img alt="Project page coming soon" src="https://img.shields.io/badge/Project%20Page-coming%20soon-22A699?style=flat-square">
+<a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project page coming soon" src="https://img.shields.io/badge/Project%20Page-website-22A699?style=flat-square"></a>
 <a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face models coming soon" src="https://img.shields.io/badge/Models-Hugging%20Face-7B61FF?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
 
 </div>
