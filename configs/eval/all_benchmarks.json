@@ -1,0 +1,139 @@
+{
+    "7Scenes": {
+        "path": "data/eval/7Scenes",
+        "width": 504,
+        "height": 378,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "has_sharp_boundary": true
+    },
+    "NRGBD": {
+        "path": "data/eval/NRGBD",
+        "width": 504,
+        "height": 378,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "has_sharp_boundary": true
+    },
+    "HiRoom": {
+        "path": "data/eval/HiRoom",
+        "width": 504,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "has_sharp_boundary": true
+    },
+    "NYUv2": {
+        "path": "data/eval/NYUv2",
+        "width": 640,
+        "height": 480,
+        "split": ".index.txt",
+        "depth_unit": 1.0
+    },
+    "KITTI": {
+        "path": "data/eval/KITTI",
+        "width": 1242,
+        "height": 375,
+        "split": ".index.txt",
+        "depth_unit": 1
+    },
+    "ETH3D": {
+        "path": "data/eval/ETH3D",
+        "width": 2048,
+        "height": 1365,
+        "split": ".index.txt",
+        "include_segmentation": true,
+        "depth_unit": 1
+    },
+    "iBims-1": {
+        "path": "data/eval/iBims-1",
+        "width": 640,
+        "height": 480,
+        "split": ".index.txt",
+        "has_sharp_boundary": true,
+        "include_segmentation": true,
+        "depth_unit": 1.0
+    },
+    "Sintel": {
+        "path": "data/eval/Sintel",
+        "width": 872,
+        "height": 436,
+        "split": ".index.txt",
+        "has_sharp_boundary": true,
+        "include_segmentation": true
+    },
+    "DDAD": {
+        "path": "data/eval/DDAD",
+        "width": 1400,
+        "height": 700,
+        "include_segmentation": true,
+        "split": ".index.txt",
+        "depth_unit": 1.0
+    },
+    "DIODE": {
+        "path": "data/eval/DIODE",
+        "width": 1024,
+        "height": 768,
+        "split": ".index.txt",
+        "include_segmentation": true,
+        "depth_unit": 1.0
+    },
+    "HAMMER": {
+        "path": "data/eval/HAMMER",
+        "width": 1664,
+        "height": 832,
+        "split": ".index.txt",
+        "depth_unit": 1,
+        "has_sharp_boundary": true
+    },
+    "Synth4K-1": {
+        "path": "data/eval/Synth4K/Synth4K-1",
+        "width": 896,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "min_depth": 0.1,
+        "max_depth": 150.0,
+        "has_sharp_boundary": true
+    },
+    "Synth4K-2": {
+        "path": "data/eval/Synth4K/Synth4K-2",
+        "width": 896,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "min_depth": 0.1,
+        "max_depth": 150.0,
+        "has_sharp_boundary": true
+    },
+    "Synth4K-3": {
+        "path": "data/eval/Synth4K/Synth4K-3",
+        "width": 896,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "min_depth": 0.1,
+        "max_depth": 150.0,
+        "has_sharp_boundary": true
+    },
+    "Synth4K-4": {
+        "path": "data/eval/Synth4K/Synth4K-4",
+        "width": 896,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "min_depth": 0.1,
+        "max_depth": 150.0,
+        "has_sharp_boundary": true
+    },
+    "Synth4K-5": {
+        "path": "data/eval/Synth4K/Synth4K-5",
+        "width": 896,
+        "height": 504,
+        "split": ".index.txt",
+        "depth_unit": 1.0,
+        "min_depth": 0.1,
+        "max_depth": 150.0,
+        "has_sharp_boundary": true
+    }
+}
