@@ -11,9 +11,9 @@
   <a href="https://scholar.google.com/citations?user=PDgp6OkAAAAJ&hl=en">Xiaochun Cao</a>
 </p>
 
-<img alt="arXiv coming soon" src="https://img.shields.io/badge/arXiv-coming%20soon-B31B1B?style=flat-square">
-<a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project page coming soon" src="https://img.shields.io/badge/Project%20Page-website-22A699?style=flat-square"></a>
-<a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face models coming soon" src="https://img.shields.io/badge/Models-Hugging%20Face-7B61FF?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
+<a href="https://drive.google.com/file/d/1xdIs63FJgJBosRtNSmEhu7r0V_rdzQkO/view?usp=sharing"><img alt="Paper PDF" src="https://img.shields.io/badge/Paper-PDF-168ACD?style=flat-square&amp;logo=googledrive&amp;logoColor=white"></a>
+<a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-D94B4B?style=flat-square&amp;logo=googlechrome&amp;logoColor=white"></a>
+<a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face Models" src="https://img.shields.io/badge/Hugging%20Face-Models-F0A829?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
 
 </div>
 
