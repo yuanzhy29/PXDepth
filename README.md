@@ -119,8 +119,4 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags
 
 ## 🙏 Acknowledgements
 
-This repository builds on [MoGe](https://github.com/microsoft/moge), [DINOv2](https://github.com/facebookresearch/dinov2), [PixelDiT](https://github.com/NVlabs/PixelDiT), and [utils3d](https://github.com/EasternJournalist/utils3d). See [THIRD_PARTY.md](THIRD_PARTY.md) for attribution.
-
-## 📄 License
-
-PXDepth is released under the [Apache License 2.0](LICENSE).
+This repository builds on [MoGe](https://github.com/microsoft/moge), [DINOv2](https://github.com/facebookresearch/dinov2), [PixelDiT](https://github.com/NVlabs/PixelDiT), and [utils3d](https://github.com/EasternJournalist/utils3d).
