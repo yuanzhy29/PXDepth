@@ -119,4 +119,4 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags
 
 ## 🙏 Acknowledgements
 
-This repository builds on [MoGe](https://github.com/microsoft/moge), [DINOv2](https://github.com/facebookresearch/dinov2), [PixelDiT](https://github.com/NVlabs/PixelDiT), and [utils3d](https://github.com/EasternJournalist/utils3d).
+This repository builds on [MoGe](https://github.com/microsoft/moge), [DINOv2](https://github.com/facebookresearch/dinov2), [PixelDiT](https://github.com/NVlabs/PixelDiT), and [utils3d](https://github.com/EasternJournalist/utils3d). Thanks for these excellent contributions!
