@@ -103,6 +103,7 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags
 ## 🚧 TODO
 
 - [x] Release model, inference, and evaluation code
+- [X] Release our pretrained checkpoint
 - [x] Release preprocessing for evaluation datasets
 - [ ] Release training code and training configurations
 - [ ] Release training-dataset preprocessing code
