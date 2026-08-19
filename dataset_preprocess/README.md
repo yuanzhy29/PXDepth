@@ -26,10 +26,6 @@ python dataset_preprocess/eval/synth4k.py \
   --output_dir data/eval/Synth4K
 ```
 
-The Synth4K converter uses every discovered RGB/depth pair by default. Passing
-``--meta_dir`` is optional and only needed when restricting conversion with
-external split manifests.
-
 Every output dataset contains a `.index.txt` and one directory per sample:
 
 ```text

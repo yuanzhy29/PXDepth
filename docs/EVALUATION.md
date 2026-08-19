@@ -22,7 +22,7 @@ data/eval/
 
 Each dataset directory should contain its own `.index.txt`.
 
-Preprocess 7Scenes, NRGBD, HiRoom, and Synth4K with the included converters:
+Preprocess [7Scenes](https://huggingface.co/datasets/depth-anything/DA3-BENCH/tree/main), [NRGBD](https://github.com/dazinovic/neural-rgbd-surface-reconstruction), [HiRoom](https://huggingface.co/datasets/depth-anything/DA3-BENCH/tree/main), and [Synth4K](https://huggingface.co/datasets/ritianyu/game_4k_data/tree/main)  with the included converters:
 
 ```bash
 python dataset_preprocess/eval/seven_scenes.py --input_dir /path/to/raw/7Scenes --output_dir data/eval/7Scenes

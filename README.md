@@ -13,7 +13,7 @@
 
 <a href="https://arxiv.org/abs/2608.16984"><img alt="Paper PDF" src="https://img.shields.io/badge/Paper-PDF-168ACD?style=flat-square&amp;logo=googledrive&amp;logoColor=white"></a>
 <a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-D94B4B?style=flat-square&amp;logo=googlechrome&amp;logoColor=white"></a>
-<a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face Models" src="https://img.shields.io/badge/Hugging%20Face-Models-F0A829?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
+<a href="https://huggingface.co/yuanzhy29/PXDepth/tree/main"><img alt="Hugging Face Models" src="https://img.shields.io/badge/Hugging%20Face-Models-F0A829?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
 
 </div>
 
@@ -34,7 +34,8 @@ git clone https://github.com/yuanzhy29/PXDepth.git
 cd PXDepth
 conda create -n pxdepth python=3.11 -y
 conda activate pxdepth
-pip install torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu128 # Use your preferred version if needed.
+# Use your preferred version if needed.
+pip install torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
 ```
 
@@ -76,16 +77,11 @@ Use `--fp32` instead of `--fp16` for full-precision inference. Run `python scrip
 
 ## 📊 Evaluation
 
-Download MoGe Benchmark from
-[Hugging Face](https://huggingface.co/datasets/Ruicheng/monocular-geometry-evaluation/tree/main),
-then extract them under `data/eval`.
+Download [MoGe Benchmark](https://huggingface.co/datasets/Ruicheng/monocular-geometry-evaluation/tree/main), then extract them under `data/eval`.
 
-Update the enabled dataset paths in [configs/eval/all_benchmarks.json](configs/eval/all_benchmarks.json). Remove entries for datasets that are not available locally.
+Converters for [7Scenes](https://huggingface.co/datasets/depth-anything/DA3-BENCH/tree/main), [NRGBD](https://github.com/dazinovic/neural-rgbd-surface-reconstruction), [HiRoom](https://huggingface.co/datasets/depth-anything/DA3-BENCH/tree/main), and [Synth4K](https://huggingface.co/datasets/ritianyu/game_4k_data/tree/main) are included under `dataset_preprocess/eval`. Please download the corresponding datasets first, then follow the instructions in [dataset_preprocess/README.md](dataset_preprocess/README.md) to preprocess them into the expected format.
 
-Converters for 7Scenes, NRGBD, HiRoom, and Synth4K are included under
-`dataset_preprocess/eval`. See
-[dataset_preprocess/README.md](dataset_preprocess/README.md) for commands and
-the expected raw and processed layouts.
+Update the enabled dataset paths in [configs/eval/all_benchmarks.json](configs/eval/all_benchmarks.json).
 
 Run evaluation:
 
