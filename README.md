@@ -116,6 +116,15 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags
 ## 📝 Citation
 
 ```bibtex
+@misc{yuan2026pxdepthpixelspacemodelingstructure,
+      title={PXDepth: Pixel-Space Modeling for Structure Preserving Monocular Depth Estimation}, 
+      author={Zhiyuan Yuan and Guanying Chen and Lingteng Qiu and Ruimao Zhang and Shuguang Cui and Xiaochun Cao},
+      year={2026},
+      eprint={2608.16984},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2608.16984}, 
+}
 ```
 
 ## 🙏 Acknowledgements
