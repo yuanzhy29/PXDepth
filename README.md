@@ -11,7 +11,7 @@
   <a href="https://scholar.google.com/citations?user=PDgp6OkAAAAJ&hl=en">Xiaochun Cao</a>
 </p>
 
-<a href="https://drive.google.com/file/d/1xdIs63FJgJBosRtNSmEhu7r0V_rdzQkO/view?usp=sharing"><img alt="Paper PDF" src="https://img.shields.io/badge/Paper-PDF-168ACD?style=flat-square&amp;logo=googledrive&amp;logoColor=white"></a>
+<a href="https://arxiv.org/abs/2608.16984"><img alt="Paper PDF" src="https://img.shields.io/badge/Paper-PDF-168ACD?style=flat-square&amp;logo=googledrive&amp;logoColor=white"></a>
 <a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-D94B4B?style=flat-square&amp;logo=googlechrome&amp;logoColor=white"></a>
 <a href="https://huggingface.co/yuanzhy29/PXDepth"><img alt="Hugging Face Models" src="https://img.shields.io/badge/Hugging%20Face-Models-F0A829?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
 
