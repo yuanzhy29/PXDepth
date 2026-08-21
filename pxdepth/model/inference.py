@@ -122,7 +122,8 @@ def infer(
         use_fp32: Force full precision and disable reduced-precision autocast.
 
     Returns:
-        Dictionary containing ``depth`` ``[B,H,W]``, boolean ``mask``
+        Dictionary containing aligned ``depth`` ``[B,H,W]``, normalized
+        log-depth ``depth_log1p_affine_invariant`` ``[B,H,W]``, boolean ``mask``
         ``[B,H,W]``, ``points`` ``[B,H,W,3]``, normalized ``intrinsics``
         ``[B,3,3]``, and horizontal ``fov_x`` ``[B]``. The leading batch
         dimension is removed when ``image`` is unbatched.
@@ -221,6 +222,7 @@ def infer(
             points = torch.where(mask_binary[..., None], points, torch.inf)
         result = {
             "depth": depth,
+            "depth_log1p_affine_invariant": pred,
             "mask": mask_binary,
             "points": points,
             "intrinsics": ref_intrinsics,
