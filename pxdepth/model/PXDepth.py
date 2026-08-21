@@ -259,9 +259,11 @@ class PXDepth(nn.Module):
 
         Returns:
             Dictionary containing aligned ``depth`` ``[B,H,W]``, boolean
-            ``mask`` ``[B,H,W]``, point map ``points`` ``[B,H,W,3]``, normalized
-            ``intrinsics`` ``[B,3,3]``, and horizontal ``fov_x`` ``[B]``. For an
-            unbatched input, the leading batch dimension is removed.
+            ``mask`` ``[B,H,W]``, normalized log-depth
+            ``depth_log1p_affine_invariant`` ``[B,H,W]``, point map ``points``
+            ``[B,H,W,3]``, normalized ``intrinsics`` ``[B,3,3]``, and horizontal
+            ``fov_x`` ``[B]``. For an unbatched input, the leading batch
+            dimension is removed.
         """
         return infer_model(
             self,
