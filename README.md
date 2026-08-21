@@ -14,6 +14,7 @@
 <a href="https://arxiv.org/abs/2608.16984"><img alt="Paper PDF" src="https://img.shields.io/badge/Paper-PDF-168ACD?style=flat-square&amp;logo=googledrive&amp;logoColor=white"></a>
 <a href="https://yuanzhy29.github.io/PXDepth-Page/"><img alt="Project Page" src="https://img.shields.io/badge/Project-Page-D94B4B?style=flat-square&amp;logo=googlechrome&amp;logoColor=white"></a>
 <a href="https://huggingface.co/yuanzhy29/PXDepth/tree/main"><img alt="Hugging Face Models" src="https://img.shields.io/badge/Hugging%20Face-Models-F0A829?style=flat-square&amp;logo=huggingface&amp;logoColor=FFD21E"></a>
+<a href="https://huggingface.co/spaces/sysu111/PXDepth-Demo"><img alt="Gradio Live Demo" src="https://img.shields.io/badge/Gradio-Live%20Demo-7B61FF?style=flat-square&amp;logo=gradio&amp;logoColor=white"></a>
 
 </div>
 
@@ -75,6 +76,27 @@ output/<image-name>/
 
 Use `--fp32` instead of `--fp16` for full-precision inference. Run `python scripts/infer.py --help` for all options.
 
+## 🎮 Gradio Demo
+
+Try PXDepth directly in our [online demo](https://huggingface.co/spaces/sysu111/PXDepth-Demo),
+or launch the same Gradio demo locally with the checkpoints shown above:
+
+```bash
+python app.py
+```
+
+The demo first loads `checkpoints/pxdepth/model.pt` and
+`checkpoints/moge-2-vitl-normal/model.pt`. If either file is missing, its
+released checkpoint is downloaded automatically from Hugging Face.
+
+To use checkpoints stored elsewhere:
+
+```bash
+python app.py \
+  --checkpoint /path/to/pxdepth/model.pt \
+  --reference-checkpoint /path/to/moge-2/model.pt
+```
+
 ## 📊 Evaluation
 
 Download [MoGe Benchmark](https://huggingface.co/datasets/Ruicheng/monocular-geometry-evaluation/tree/main), then extract them under `data/eval`.
@@ -101,6 +123,7 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for output files and optional flags
 - [x] Release model, inference, and evaluation code
 - [X] Release our pretrained checkpoint
 - [x] Release preprocessing for evaluation datasets
+- [x] Release gradio demo
 - [ ] Release training code and training configurations
 - [ ] Release training-dataset preprocessing code
 

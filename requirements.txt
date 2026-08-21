@@ -19,4 +19,4 @@ OpenEXR==3.4.13
 # Geometry, data-pipeline, and metric-scale reference dependencies.
 git+https://github.com/EasternJournalist/utils3d.git@3fab839f0be9931dac7c8488eb0e1600c236e183
 git+https://github.com/EasternJournalist/pipeline.git@866f059d2a05cde05e4a52211ec5051fd5f276d6
-git+https://github.com/microsoft/MoGe.git
+git+https://github.com/microsoft/MoGe.git@42acd8f46e974f5e0548ecd72315d1d7df2cb6f4
