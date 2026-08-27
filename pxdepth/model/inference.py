@@ -1,9 +1,9 @@
 """Metric-scale inference helpers used by :class:`PXDepth`.
 
 The network predicts normalized log-depth. This module keeps reference-model
-loading, low-resolution log-space alignment, camera reconstruction, and mask
-application outside the architecture file while preserving the released
-``model.infer`` behavior.
+loading, depth-affine alignment, camera reconstruction, and mask application
+outside the architecture file while preserving the released ``model.infer``
+behavior.
 """
 
 from numbers import Number
@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import utils3d
 
-from ..utils.alignment import align_depth_affine
+from ..utils.alignment import solve_depth_affine
 from .precision import full_precision
 
 
@@ -186,7 +186,7 @@ def infer(
             pred_low = pred[index][nearest][low_mask]
             ref_log_low = ref_log[index][nearest][low_mask]
             ref_depth_low = ref_depth[index][nearest][low_mask]
-            a, b = align_depth_affine(
+            a, b = solve_depth_affine(
                 pred_low.unsqueeze(0),
                 ref_log_low.unsqueeze(0),
                 (1.0 / ref_depth_low.clamp_min(1e-5)).unsqueeze(0),

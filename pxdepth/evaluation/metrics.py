@@ -1,12 +1,12 @@
 """Depth, point-cloud, local-structure, and boundary metrics.
 
-Raw model outputs are aligned with the same low-resolution robust affine
-procedures used by the MoGe evaluation protocol. Depth-space, log-depth-space,
-and disparity-space predictions are converted to positive depth before common
-metrics and point-cloud reconstruction are evaluated.
+Raw model outputs are aligned with protocol-specific robust affine procedures.
+Depth-space, log-depth-space, and disparity-space predictions are converted to
+positive depth before common metrics and point-cloud reconstruction are
+evaluated.
 """
 
-from typing import Dict, Literal, Tuple, Union
+from typing import Dict, Tuple, Union
 from numbers import Number
 
 import cv2
@@ -15,14 +15,12 @@ import numpy as np
 import utils3d
 
 from ..utils.alignment import (
-    align_affine_lstsq,
     align_depth_affine,
+    align_disparity_affine,
+    align_points_affine,
     align_points_scale_xyz_shift,
 )
 from ..utils.tools import key_average
-
-
-ALIGN_MIN_VALID_PIXELS = 16
 
 
 def rel_depth(pred: torch.Tensor, gt: torch.Tensor, eps: float = 1e-6):
@@ -138,7 +136,7 @@ def _nan_boundary_metrics() -> Dict[str, float]:
     }
 
 
-def _mda_boundary_mask(gt_depth: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def _canny_boundary_mask(gt_depth: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Extract the Canny GT depth edge mask used for boundary evaluation.
 
     Args:
@@ -190,7 +188,6 @@ def boundary_edge_metrics(
     mask: torch.Tensor,
     intrinsics: torch.Tensor,
     return_misc: bool = False,
-    edge_mode: Literal['mda'] = 'mda',
 ) -> Union[Dict[str, float], Tuple[Dict[str, float], Dict[str, torch.Tensor]]]:
     """Evaluate edge depth and 3D boundary point-cloud quality.
 
@@ -205,7 +202,6 @@ def boundary_edge_metrics(
         mask: Boolean GT valid-depth mask ``[H,W]``.
         intrinsics: Normalized camera matrix ``[3,3]``.
         return_misc: Also return edge masks, aligned clouds, and ICP transform.
-        edge_mode: Boundary extraction protocol. The release supports ``'mda'``.
 
     Returns:
         metrics: Dictionary containing ``acc`` and ``cd`` in millimeters.
@@ -230,10 +226,7 @@ def boundary_edge_metrics(
 
     valid = mask & torch.isfinite(gt_depth) & (gt_depth > 0)
     pred_valid = torch.isfinite(pred_depth) & (pred_depth > 0)
-    if edge_mode == 'mda':
-        edge = _mda_boundary_mask(gt_depth, valid)
-    else:
-        raise ValueError(f"Unknown boundary edge mode: {edge_mode}")
+    edge = _canny_boundary_mask(gt_depth, valid)
     gt_edge_mask = edge & valid
     pred_edge_mask = gt_edge_mask & pred_valid
     if return_misc:
@@ -288,139 +281,6 @@ def boundary_edge_metrics(
     return _finish()
 
 
-def _moge_lowres_affine(
-    pred: torch.Tensor,
-    target: torch.Tensor,
-    mask: torch.Tensor,
-    weight_depth: torch.Tensor,
-) -> Tuple[torch.Tensor, bool]:
-    """Fit MoGe-style weighted affine alignment on a 64x64 valid subset.
-
-    Args:
-        pred: Raw prediction map ``[H,W]`` in depth or log-depth space.
-        target: GT target map ``[H,W]`` in the same affine space.
-        mask: Boolean candidate-fit mask ``[H,W]``.
-        weight_depth: Positive GT depth ``[H,W]`` used for inverse-depth weights.
-
-    Returns:
-        aligned: Full-resolution floating prediction ``[H,W]``.
-        success: Boolean indicating whether finite affine parameters were found.
-    """
-    valid = (
-        mask
-        & torch.isfinite(pred)
-        & torch.isfinite(target)
-        & torch.isfinite(weight_depth)
-        & (weight_depth > 0)
-    )
-    if valid.sum().item() < ALIGN_MIN_VALID_PIXELS:
-        return pred.float(), False
-
-    pred_clean = torch.where(valid, pred.float(), torch.zeros_like(pred, dtype=torch.float32))
-    target_clean = torch.where(valid, target.float(), torch.zeros_like(target, dtype=torch.float32))
-    weight_depth_clean = torch.where(valid, weight_depth.float(), torch.ones_like(weight_depth, dtype=torch.float32))
-    try:
-        pred_lr, target_lr, weight_depth_lr, mask_lr = utils3d.pt.masked_nearest_resize(
-            pred_clean,
-            target_clean,
-            weight_depth_clean,
-            mask=valid,
-            size=(64, 64),
-        )
-        weight = mask_lr.flatten(-2, -1).float() / weight_depth_lr.flatten(-2, -1).clamp_min(1e-3)
-        if (weight > 0).sum().item() < ALIGN_MIN_VALID_PIXELS:
-            return pred.float(), False
-        scale, shift = align_depth_affine(
-            pred_lr.flatten(-2, -1),
-            target_lr.flatten(-2, -1),
-            weight,
-        )
-        scale = scale.squeeze()
-        shift = shift.squeeze()
-        ok = torch.isfinite(scale) & torch.isfinite(shift)
-        if not bool(ok.item() if ok.ndim == 0 else ok.all().item()):
-            return pred.float(), False
-        return pred.float() * scale + shift, True
-    except Exception:
-        return pred.float(), False
-
-
-def _moge_disparity_affine(
-    pred_disparity: torch.Tensor,
-    gt_disparity: torch.Tensor,
-    mask: torch.Tensor,
-) -> Tuple[torch.Tensor, bool]:
-    """Fit least-squares scale and shift in disparity space.
-
-    Args:
-        pred_disparity: Raw predicted disparity ``[H,W]``.
-        gt_disparity: Ground-truth reciprocal depth ``[H,W]``.
-        mask: Boolean fit mask ``[H,W]``.
-
-    Returns:
-        aligned: Full-resolution disparity ``[H,W]``.
-        success: Boolean indicating a finite affine fit.
-    """
-    valid = mask & torch.isfinite(pred_disparity) & torch.isfinite(gt_disparity) & (gt_disparity > 0)
-    if valid.sum().item() < ALIGN_MIN_VALID_PIXELS:
-        return pred_disparity.float(), False
-    try:
-        scale, shift = align_affine_lstsq(pred_disparity[valid].float(), gt_disparity[valid].float())
-        ok = torch.isfinite(scale) & torch.isfinite(shift)
-        if not bool(ok.item() if ok.ndim == 0 else ok.all().item()):
-            return pred_disparity.float(), False
-        return pred_disparity.float() * scale + shift, True
-    except Exception:
-        return pred_disparity.float(), False
-
-
-def _moge_points_affine(
-    pred_points: torch.Tensor,
-    gt_points: torch.Tensor,
-    mask: torch.Tensor,
-) -> Tuple[torch.Tensor, bool]:
-    """Fit one global scale and XYZ translation to a predicted point map.
-
-    Args:
-        pred_points: Predicted camera-space point map ``[H,W,3]``.
-        gt_points: Ground-truth point map ``[H,W,3]``.
-        mask: Boolean valid correspondence mask ``[H,W]``.
-
-    Returns:
-        aligned: Full-resolution point map ``[H,W,3]``.
-        success: Boolean indicating whether robust alignment succeeded.
-    """
-    valid = mask & torch.isfinite(pred_points).all(dim=-1) & torch.isfinite(gt_points).all(dim=-1)
-    if valid.sum().item() < ALIGN_MIN_VALID_PIXELS:
-        return pred_points.float(), False
-
-    pred_clean = torch.where(valid[..., None], pred_points.float(), torch.zeros_like(pred_points, dtype=torch.float32))
-    gt_clean = torch.where(valid[..., None], gt_points.float(), torch.zeros_like(gt_points, dtype=torch.float32))
-    try:
-        pred_lr, gt_lr, mask_lr = utils3d.pt.masked_nearest_resize(
-            pred_clean,
-            gt_clean,
-            mask=valid,
-            size=(64, 64),
-        )
-        weight = mask_lr.flatten(-2, -1).float() / gt_lr.norm(dim=-1).flatten(-2, -1).clamp_min(1e-6)
-        if (weight > 0).sum().item() < ALIGN_MIN_VALID_PIXELS:
-            return pred_points.float(), False
-        scale, shift = align_points_scale_xyz_shift(
-            pred_lr.flatten(-3, -2),
-            gt_lr.flatten(-3, -2),
-            weight,
-        )
-        scale = scale.squeeze()
-        shift = shift.squeeze()
-        ok = torch.isfinite(scale) & torch.isfinite(shift).all()
-        if not bool(ok.item() if ok.ndim == 0 else ok.all().item()):
-            return pred_points.float(), False
-        return pred_points.float() * scale + shift, True
-    except Exception:
-        return pred_points.float(), False
-
-
 def compute_metrics(
     pred: Dict[str, torch.Tensor],
     gt: Dict[str, torch.Tensor],
@@ -464,7 +324,7 @@ def compute_metrics(
         raw_log_depth = pred['depth_log1p_affine_invariant'].float()
         fit_mask = valid_depth & torch.isfinite(raw_log_depth)
         target_log = torch.log1p(gt_depth)
-        aligned_log, ok = _moge_lowres_affine(raw_log_depth, target_log, fit_mask, gt_depth)
+        aligned_log, ok = align_depth_affine(raw_log_depth, target_log, fit_mask, gt_depth)
         pred_depth_aligned = torch.expm1(aligned_log if ok else raw_log_depth)
 
         metric_mask = fit_mask
@@ -478,7 +338,7 @@ def compute_metrics(
         raw_disparity = pred['disparity_affine_invariant'].float()
         fit_mask = valid_depth & torch.isfinite(raw_disparity)
         gt_disparity = torch.where(valid_depth, gt_depth.reciprocal(), torch.zeros_like(gt_depth))
-        aligned_disparity, ok = _moge_disparity_affine(raw_disparity, gt_disparity, fit_mask)
+        aligned_disparity, ok = align_disparity_affine(raw_disparity, gt_disparity, fit_mask)
         aligned_disparity = aligned_disparity if ok else raw_disparity
         if fit_mask.any():
             max_depth = gt_depth[fit_mask].max()
@@ -511,7 +371,7 @@ def compute_metrics(
             & torch.isfinite(gt_points).all(dim=-1)
         )
         if point_mask.any():
-            aligned_points, ok = _moge_points_affine(pred_points_affine_invariant, gt_points, point_mask)
+            aligned_points, ok = align_points_affine(pred_points_affine_invariant, gt_points, point_mask)
             pred_points_aligned = aligned_points if ok else pred_points_affine_invariant
             metrics['points_affine_invariant'] = {
                 'rel': rel_point(pred_points_aligned[point_mask], gt_points[point_mask]),
@@ -566,7 +426,7 @@ def compute_metrics(
 
         metrics['local_points'] = key_average(local_points_metrics)
 
-    # Boundary Acc/CD with the MDA/Canny edge.
+    # Boundary Acc/CD with Canny depth edges.
     boundary_depth = pred_depth_aligned
     if compute_boundary and boundary_depth is not None and gt['has_sharp_boundary']:
         if vis:
@@ -576,7 +436,6 @@ def compute_metrics(
                 mask,
                 gt['intrinsics'],
                 return_misc=True,
-                edge_mode='mda',
             )
         else:
             boundary_metrics = boundary_edge_metrics(
@@ -584,7 +443,6 @@ def compute_metrics(
                 gt_depth,
                 mask,
                 gt['intrinsics'],
-                edge_mode='mda',
             )
             boundary_misc = {}
         metrics['boundary'] = boundary_metrics

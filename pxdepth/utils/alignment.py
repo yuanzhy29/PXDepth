@@ -10,6 +10,10 @@ import math
 from typing import Callable, Optional, Tuple, Union
 
 import torch
+import utils3d
+
+
+_ALIGN_MIN_VALID_PIXELS = 16
 
 
 def scatter_min(size: int, dim: int, index: torch.LongTensor, src: torch.Tensor) -> torch.return_types.min:
@@ -199,7 +203,7 @@ def align(x: torch.Tensor, y: torch.Tensor, w: torch.Tensor, trunc: Optional[Uni
     return a, loss, index
 
 
-def align_depth_affine(depth_src: torch.Tensor, depth_tgt: torch.Tensor, weight: Optional[torch.Tensor], trunc: Optional[Union[float, torch.Tensor]] = None):
+def solve_depth_affine(depth_src: torch.Tensor, depth_tgt: torch.Tensor, weight: Optional[torch.Tensor], trunc: Optional[Union[float, torch.Tensor]] = None):
     """Fit robust affine scale and shift between paired scalar values.
 
     Args:
@@ -322,3 +326,152 @@ def align_affine_lstsq(x: torch.Tensor, y: torch.Tensor, w: torch.Tensor = None)
     B = (w_sqrt * y)[..., None]
     a, b = torch.linalg.lstsq(A, B)[0].squeeze(-1).unbind(-1)
     return a, b
+
+
+def align_depth_affine(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    mask: torch.Tensor,
+    weight_depth: torch.Tensor,
+) -> Tuple[torch.Tensor, bool]:
+    """Affine-align a full depth-like prediction map to a target map.
+
+    The robust scale and shift are estimated from valid correspondences on a
+    masked-nearest ``64 x 64`` representation, then applied to the original
+    full-resolution prediction. The values may be metric depth or log-depth as
+    long as ``pred`` and ``target`` use the same affine space.
+
+    Args:
+        pred: Raw prediction map ``[H,W]`` in depth or log-depth space.
+        target: Target map ``[H,W]`` in the same affine space as ``pred``.
+        mask: Boolean candidate-fit mask ``[H,W]``.
+        weight_depth: Positive target depth ``[H,W]`` used to construct
+            inverse-depth correspondence weights.
+
+    Returns:
+        A tuple containing the aligned full-resolution map ``[H,W]`` and a
+        boolean indicating whether finite affine parameters were found. On
+        failure, the returned map is ``pred`` converted to FP32.
+    """
+    valid = (
+        mask
+        & torch.isfinite(pred)
+        & torch.isfinite(target)
+        & torch.isfinite(weight_depth)
+        & (weight_depth > 0)
+    )
+    if valid.sum().item() < _ALIGN_MIN_VALID_PIXELS:
+        return pred.float(), False
+
+    pred_clean = torch.where(valid, pred.float(), torch.zeros_like(pred, dtype=torch.float32))
+    target_clean = torch.where(valid, target.float(), torch.zeros_like(target, dtype=torch.float32))
+    weight_depth_clean = torch.where(
+        valid,
+        weight_depth.float(),
+        torch.ones_like(weight_depth, dtype=torch.float32),
+    )
+    try:
+        pred_fit, target_fit, weight_depth_fit, mask_fit = utils3d.pt.masked_nearest_resize(
+            pred_clean,
+            target_clean,
+            weight_depth_clean,
+            mask=valid,
+            size=(64, 64),
+        )
+        weight = mask_fit.flatten(-2, -1).float() / weight_depth_fit.flatten(-2, -1).clamp_min(1e-3)
+        if (weight > 0).sum().item() < _ALIGN_MIN_VALID_PIXELS:
+            return pred.float(), False
+        scale, shift = solve_depth_affine(
+            pred_fit.flatten(-2, -1),
+            target_fit.flatten(-2, -1),
+            weight,
+        )
+        scale = scale.squeeze()
+        shift = shift.squeeze()
+        finite = torch.isfinite(scale) & torch.isfinite(shift)
+        if not bool(finite.item() if finite.ndim == 0 else finite.all().item()):
+            return pred.float(), False
+        return pred.float() * scale + shift, True
+    except Exception:
+        return pred.float(), False
+
+
+def align_disparity_affine(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    mask: torch.Tensor,
+) -> Tuple[torch.Tensor, bool]:
+    """Affine-align a full predicted disparity map to target disparity.
+
+    Args:
+        pred: Raw predicted disparity map ``[H,W]``.
+        target: Positive target disparity map ``[H,W]``.
+        mask: Boolean candidate-fit mask ``[H,W]``.
+
+    Returns:
+        A tuple containing the aligned full-resolution disparity ``[H,W]`` and
+        a boolean indicating whether a finite least-squares fit was found. On
+        failure, the returned map is ``pred`` converted to FP32.
+    """
+    valid = mask & torch.isfinite(pred) & torch.isfinite(target) & (target > 0)
+    if valid.sum().item() < _ALIGN_MIN_VALID_PIXELS:
+        return pred.float(), False
+    try:
+        scale, shift = align_affine_lstsq(pred[valid].float(), target[valid].float())
+        finite = torch.isfinite(scale) & torch.isfinite(shift)
+        if not bool(finite.item() if finite.ndim == 0 else finite.all().item()):
+            return pred.float(), False
+        return pred.float() * scale + shift, True
+    except Exception:
+        return pred.float(), False
+
+
+def align_points_affine(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    mask: torch.Tensor,
+) -> Tuple[torch.Tensor, bool]:
+    """Align a full point map with one scale and one XYZ translation.
+
+    The transform is estimated from valid correspondences on a masked-nearest
+    ``64 x 64`` representation and applied to the original point map.
+
+    Args:
+        pred: Predicted camera-space point map ``[H,W,3]``.
+        target: Target camera-space point map ``[H,W,3]``.
+        mask: Boolean correspondence mask ``[H,W]``.
+
+    Returns:
+        A tuple containing the aligned full-resolution point map ``[H,W,3]``
+        and a boolean indicating whether finite transform parameters were
+        found. On failure, the returned map is ``pred`` converted to FP32.
+    """
+    valid = mask & torch.isfinite(pred).all(dim=-1) & torch.isfinite(target).all(dim=-1)
+    if valid.sum().item() < _ALIGN_MIN_VALID_PIXELS:
+        return pred.float(), False
+
+    pred_clean = torch.where(valid[..., None], pred.float(), torch.zeros_like(pred, dtype=torch.float32))
+    target_clean = torch.where(valid[..., None], target.float(), torch.zeros_like(target, dtype=torch.float32))
+    try:
+        pred_fit, target_fit, mask_fit = utils3d.pt.masked_nearest_resize(
+            pred_clean,
+            target_clean,
+            mask=valid,
+            size=(64, 64),
+        )
+        weight = mask_fit.flatten(-2, -1).float() / target_fit.norm(dim=-1).flatten(-2, -1).clamp_min(1e-6)
+        if (weight > 0).sum().item() < _ALIGN_MIN_VALID_PIXELS:
+            return pred.float(), False
+        scale, shift = align_points_scale_xyz_shift(
+            pred_fit.flatten(-3, -2),
+            target_fit.flatten(-3, -2),
+            weight,
+        )
+        scale = scale.squeeze()
+        shift = shift.squeeze()
+        finite = torch.isfinite(scale) & torch.isfinite(shift).all()
+        if not bool(finite.item() if finite.ndim == 0 else finite.all().item()):
+            return pred.float(), False
+        return pred.float() * scale + shift, True
+    except Exception:
+        return pred.float(), False

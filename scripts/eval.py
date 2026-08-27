@@ -35,7 +35,7 @@ def _loader_config(config: Dict[str, Any], boundary: bool) -> Dict[str, Any]:
     result.pop("boundary_height", None)
     if boundary:
         result.update(
-            mda_boundary_transform=True,
+            boundary_transform=True,
             disable_augmentations=True,
             disable_perspective=True,
             resize_to_cover_center_crop=False,

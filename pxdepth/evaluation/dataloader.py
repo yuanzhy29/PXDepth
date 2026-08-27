@@ -128,7 +128,7 @@ def _resize_depth_nearest_preserve_nan(depth: np.ndarray, size: Tuple[int, int])
     return np.where(resized_valid, resized_depth, np.nan).astype(np.float32)
 
 
-def _mda_boundary_view(
+def _boundary_view(
     image: np.ndarray,
     depth: np.ndarray,
     intrinsics: np.ndarray,
@@ -251,7 +251,7 @@ class EvalDataLoaderPipeline:
         disable_augmentations: bool = True,
         disable_perspective: bool = True,
         resize_to_cover_center_crop: bool = False,
-        mda_boundary_transform: bool = False,
+        boundary_transform: bool = False,
     ):
         """Configure benchmark indexing, transforms, and worker stages.
 
@@ -281,7 +281,7 @@ class EvalDataLoaderPipeline:
             disable_augmentations: Disable random flip/color transforms.
             disable_perspective: Use identity perspective mapping.
             resize_to_cover_center_crop: Resize to cover then center crop.
-            mda_boundary_transform: Use the principal-point-centered boundary
+            boundary_transform: Use the principal-point-centered boundary
                 benchmark transformation.
 
         Returns:
@@ -315,7 +315,7 @@ class EvalDataLoaderPipeline:
         self.disable_augmentations = bool(disable_augmentations)
         self.disable_perspective = bool(disable_perspective)
         self.resize_to_cover_center_crop = bool(resize_to_cover_center_crop)
-        self.mda_boundary_transform = bool(mda_boundary_transform)
+        self.boundary_transform = bool(boundary_transform)
 
         self.rng = np.random.default_rng(seed=0)
 
@@ -459,8 +459,8 @@ class EvalDataLoaderPipeline:
         else:
             raw_normal = None
 
-        if self.mda_boundary_transform:
-            tgt_image, tgt_depth, tgt_intrinsics, tgt_segmentation_mask = _mda_boundary_view(
+        if self.boundary_transform:
+            tgt_image, tgt_depth, tgt_intrinsics, tgt_segmentation_mask = _boundary_view(
                 image,
                 depth,
                 intrinsics,
@@ -514,7 +514,7 @@ class EvalDataLoaderPipeline:
             )
             transform = tgt_intrinsics @ R @ np.linalg.inv(intrinsics)
 
-        if not self.resize_to_cover_center_crop and not self.mda_boundary_transform:
+        if not self.resize_to_cover_center_crop and not self.boundary_transform:
             tgt_image = warp_perspective(image, transform, (tgt_height, tgt_width), interpolation='lanczos')
 
             depth_edge_mask = utils3d.np.depth_map_edge(depth, mask=raw_depth_mask, kernel_size=5, ltol=0.01)
