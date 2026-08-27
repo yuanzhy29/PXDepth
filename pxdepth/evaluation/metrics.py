@@ -430,8 +430,8 @@ def compute_metrics(
     """Align one prediction and compute all applicable benchmark metrics.
 
     Args:
-        pred: Prediction dictionary. It may contain raw ``depth_affine_invariant``
-            ``[H,W]`` plus ``depth_affine_space`` (``'depth'``/``'log'``), raw
+        pred: Prediction dictionary. It may contain raw normalized log-depth
+            ``depth_log1p_affine_invariant`` ``[H,W]``, raw
             ``disparity_affine_invariant`` ``[H,W]``, optional point map
             ``points_affine_invariant`` ``[H,W,3]``, and predicted ``mask``
             ``[H,W]``.
@@ -460,19 +460,12 @@ def compute_metrics(
     pred_depth_aligned = None
     pred_points_aligned = None
 
-    if 'depth_affine_invariant' in pred:
-        raw_depth = pred['depth_affine_invariant'].float()
-        fit_mask = valid_depth & torch.isfinite(raw_depth)
-        affine_space = str(pred.get('depth_affine_space', 'depth')).lower()
-        if affine_space == 'log':
-            target_log = torch.log1p(gt_depth)
-            aligned_log, ok = _moge_lowres_affine(raw_depth, target_log, fit_mask, gt_depth)
-            pred_depth_aligned = torch.expm1(aligned_log if ok else raw_depth)
-        elif affine_space == 'depth':
-            aligned_depth, ok = _moge_lowres_affine(raw_depth, gt_depth, fit_mask, gt_depth)
-            pred_depth_aligned = aligned_depth if ok else raw_depth
-        else:
-            raise ValueError(f"Unsupported depth_affine_space={affine_space!r}")
+    if 'depth_log1p_affine_invariant' in pred:
+        raw_log_depth = pred['depth_log1p_affine_invariant'].float()
+        fit_mask = valid_depth & torch.isfinite(raw_log_depth)
+        target_log = torch.log1p(gt_depth)
+        aligned_log, ok = _moge_lowres_affine(raw_log_depth, target_log, fit_mask, gt_depth)
+        pred_depth_aligned = torch.expm1(aligned_log if ok else raw_log_depth)
 
         metric_mask = fit_mask
         if metric_mask.any():

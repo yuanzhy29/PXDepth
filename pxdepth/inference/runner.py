@@ -54,10 +54,10 @@ def predict_raw(
         use_fp32: Force full-precision model execution.
 
     Returns:
-        Dictionary with raw normalized log-depth ``depth_affine_invariant``
-        ``[B,H,W]``, ``depth_affine_space='log'``, boolean ``mask`` ``[B,H,W]``,
-        and scalar forward time. The leading batch dimension is removed for
-        unbatched input.
+        Dictionary with raw normalized log-depth
+        ``depth_log1p_affine_invariant`` ``[B,H,W]``, boolean ``mask``
+        ``[B,H,W]``, and scalar forward time. The leading batch dimension is
+        removed for unbatched input.
     """
     image, original_size = resize_image(image, input_size, resize_by_area, model.patch_size)
     batched = image.ndim == 4
@@ -70,12 +70,11 @@ def predict_raw(
     synchronize(model.device)
     elapsed = time.perf_counter() - start
 
-    depth = resize_map(output["depth"], original_size)
+    depth_log1p = resize_map(output["depth_log1p_affine_invariant"], original_size)
     mask = resize_map(output["mask"], original_size, is_mask=True)
 
     pred = {
-        "depth_affine_invariant": depth,
-        "depth_affine_space": "log",
+        "depth_log1p_affine_invariant": depth_log1p,
         "mask": mask,
         "inference_time": elapsed,
     }

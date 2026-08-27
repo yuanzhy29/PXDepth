@@ -150,7 +150,7 @@ def infer(
     output = model.forward(image, use_fp16=use_fp16, use_fp32=use_fp32)
 
     with full_precision(model.device):
-        pred = output["depth"].float()
+        pred = output["depth_log1p_affine_invariant"].float()
         mask = output["mask"].float()
         ref_depth, ref_intrinsics, ref_fov = gt_depth, intrinsics, fov_x
         if ref_depth is None:

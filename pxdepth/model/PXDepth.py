@@ -202,8 +202,9 @@ class PXDepth(nn.Module):
                 exclusive with ``use_fp16``.
 
         Returns:
-            Dictionary with normalized log-depth ``depth`` and finite-depth
-            probability ``mask``, both FP32 tensors ``[B, H, W]``.
+            Dictionary with normalized log-depth
+            ``depth_log1p_affine_invariant`` and finite-depth probability
+            ``mask``, both FP32 tensors ``[B, H, W]``.
         """
         height, width = image.shape[-2:]
         if height % self.patch_size or width % self.patch_size:
@@ -222,7 +223,7 @@ class PXDepth(nn.Module):
         with full_precision(image.device):
             depth = self._remap(depth.float().squeeze(1))
             mask = mask.float().squeeze(1).sigmoid()
-        return {"depth": depth, "mask": mask}
+        return {"depth_log1p_affine_invariant": depth, "mask": mask}
 
     def infer(
         self,
